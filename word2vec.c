@@ -569,7 +569,7 @@ void *TrainModelThread(void *id) {
 	long long a, b, d, z, word, last_word, sentence_length = 0;
 	long long learn_word_count = 0, last_learn_word_count = 0, word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
 	long long l1, l2, c, target, label, local_iter = iter;
-	int randomorder, randomdep[5];
+	int randomdep[5], randomorder = 0;
 	unsigned int randseed;
 	unsigned long long next_random = (long long)id;
 	unsigned long long next_random_s = (long long)id;
@@ -577,7 +577,7 @@ void *TrainModelThread(void *id) {
 	real sum = 0, average = 0;
 	int count = 0, wcount = 0, sizew = 0;
 	clock_t now;
-	real lamda = 0, multir = 0, moda = 0, modb = 0, multiresult = 0;
+	real lamda = 0, multir = 0, multiresult = 0;
 	sNode head = NULL;
 	sNode tail = NULL;
 	real *neu1 = (real *)calloc(layer1_size + weight_layer_size, sizeof(real));
