@@ -1,5 +1,5 @@
 //  2017, Modified by Lin Ziwei and Li Chen on word2vec in 
-//  The Institude of Advanced Computing Technology(ACT), Beihang University
+//  Advanced Computer Technology(ACT), Beihang University
 // Added:
 //   - support for different order of dependencies for HS&CBOW & NS&SG
 //   - different input context
@@ -53,15 +53,13 @@ int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100, weight_layer_size = 50;
 long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0, train_weights = 0, weight_size = 0;
-real alpha = 0.025, starting_alpha, sample = 1e-3, weight_sample = 1e-10;
+real alpha = 0.015, starting_alpha, sample = 1e-3, weight_sample = 1e-10;
 real *syn0, *syn1, *syn2, *syn1neg, *expTable;
 clock_t start;
 
 int hs = 0, negative = 5;
 const int table_size = 1e8;
 int *table;
-char **words;
-long words_length = 0;
 
 void InitUnigramTable() {
 	int a, i;
@@ -79,37 +77,6 @@ void InitUnigramTable() {
 		}
 		if (i >= vocab_size) i = vocab_size - 1;
 	}
-}
-
-void ReadWords(){
-    long long i, j = 0;
-    char word[MAX_STRING];
-    char line[MAX_STRING];
-    words = (char **)malloc(sizeof(char *)*190000);
-    for(i = 0;i < 190000;i++){
-        words[i] = (char*)malloc(sizeof(char)*MAX_STRING);
-    }
-    i = 0;
-    FILE *fin = fopen(read_vocab_file, "rb");
-    while (1) {
-		while (!feof(fin)) {
-            memset(line, 0, MAX_STRING);
-            memset(word, 0, MAX_STRING);
-            fgets(line,MAX_STRING,fin);
-            for(j = 0;j < MAX_STRING;j++){
-                if(line[j] == ' '){
-                    word[j] = 0;
-                    break;
-                }
-                word[j] = line[j];
-            }
-            strcpy(words[i], word);
-            i++;
-		}
-		break;
-	}
-    words_length = i - 1;
-    fclose(fin);
 }
 
 void ReadWord(char *word, FILE *fin) {
@@ -602,8 +569,7 @@ void *TrainModelThread(void *id) {
 	long long a, b, d, z, word, last_word, sentence_length = 0;
 	long long learn_word_count = 0, last_learn_word_count = 0, word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
 	long long l1, l2, c, target, label, local_iter = iter;
-	int randomword, randomnums, randomjie, randomyicun[5];
-    char randomwords[MAX_STRING];
+	int randomorder, randomdep[5];
 	unsigned int randseed;
 	unsigned long long next_random = (long long)id;
 	unsigned long long next_random_s = (long long)id;
@@ -621,13 +587,9 @@ void *TrainModelThread(void *id) {
 	FILE *new_operation_fi = fopen(train_file, "rb");
 	fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 	fseek(new_operation_fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
-	int zd = 0;
 	randseed = (unsigned int)time(NULL) * 10 + id;
 	randseed = randseed * 1103515245 + 12345;
-	randseed = randseed * 1103515245 + 12345;
-	randseed = randseed * 1103515245 + 12345;
 	while (1) {
-		zd++;
 		head = (sNode)malloc(sizeof(Node));
 		tail = head;
 		tail->next = NULL;
@@ -645,7 +607,7 @@ void *TrainModelThread(void *id) {
 			if (alpha < starting_alpha * 0.0001) alpha = starting_alpha * 0.0001;
 		}
 		if (sentence_length == 0) {
-			if (cbow && new_operation == 1 && !feof(new_operation_fi)) {
+			if (new_operation == 1 && !feof(new_operation_fi)) {
 				GetScore(new_operation_fi, head, tail);
 				head->score = 0;
 				head->next = Insert_sort(head->next);
@@ -681,8 +643,7 @@ void *TrainModelThread(void *id) {
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] = 0;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] = 0;
 		next_random_s = next_random_s* (unsigned long long)25214903917 + 11;
-		b = next_random_s % window;
-		//b = 3;
+		b = next_random_s % window + 1;
 		if (cbow) {
 			sum = 0;
 			count = 0;
@@ -749,7 +710,7 @@ void *TrainModelThread(void *id) {
 					// 'g' is the gradient multiplied by the learning rate
 					g = (1 - vocab[word].code[d] - f) * alpha;
 					// Propagate errors output -> hidden
-					for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] += g * syn1[c + l2] * average;
+					/**/for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] += g * syn1[c + l2] * average;
 					for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] += g * syn1[c + l2];
 					// Learn weights hidden -> output
 					for (c = 0; c < layer1_size + weight_layer_size; c++) syn1[c + l2] += g * neu1[c];
@@ -766,7 +727,7 @@ void *TrainModelThread(void *id) {
 						if (target == word) continue;
 						label = 0;
 					}
-					l2 = target * layer1_size;//
+					l2 = target * layer1_size;
 					f = 0;
 					for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
 					if (f > MAX_EXP) g = (label - 1) * alpha;
@@ -786,15 +747,15 @@ void *TrainModelThread(void *id) {
 						lamda = 1;
 						multir = 0;
 						multiresult = 0;
-						moda = 0;
-						modb = 0;
+					//	moda = 0;
+						//modb = 0;
 						for (c = 0; c < layer1_size; c++) {
 							multir += (neu1w[c] * syn0[c + n->word * layer1_size]);
-							moda += (neu1w[c] * neu1w[c]); 
-							modb += (syn0[c + last_word * layer1_size] * syn0[c + last_word * layer1_size]);
+							//moda += (neu1w[c] * neu1w[c]); 
+							//modb += (syn0[c + last_word * layer1_size] * syn0[c + last_word * layer1_size]);
 						}
 						for (c = 0;c < 10;c++) {
-							if (n->yicun[c] == -1) {
+							/**/if (n->yicun[c] == -1) {
 								break;
 							}
 							else {
@@ -851,49 +812,28 @@ void *TrainModelThread(void *id) {
 		}
 		else {
 		if (new_operation == 1) {
-            randseed = randseed * 1103515245 + 12345;
-            randomnums = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(20 - 4 + 1) + 1;
-			sNode n, p;
-			sNode h;
-            h = head;
-            randseed = randseed * 1103515245 + 12345;
-            randomword = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(words_length - 0 + 1) + 0;
-            memset(randomwords, 0, MAX_STRING);
-            strcpy(randomwords, words[randomword]);
-            head->word = SearchVocab(randomwords);
-            for (c = 0; c < randomnums;c++){
-                sNode temp = (sNode)malloc(sizeof(Node));
-                randseed = randseed * 1103515245 + 12345;
-                randomword = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(words_length - 0 + 1) + 0;
-                memset(randomwords, 0, MAX_STRING);
-                strcpy(randomwords, words[randomword]);
-                temp->word = SearchVocab(randomwords);
-                temp->next = NULL;
-                h->next = temp;
-                h = h->next;
-            }
-			next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-            h = head;
-			for(;h->next!=NULL;)
-			{
-				if (sample > 0) {
-					real ran = (sqrt(vocab[h->next->word].cn / (sample * train_words)) + 1) * (sample * train_words) / vocab[h->next->word].cn;
-					next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-					if (ran < (next_random_s & 0xFFFF) / (real)65536) {
-							p = h->next;
-							h->next = h->next->next;
-							free(p);
-					}
-					else{
-						h = h->next;
+				Node *n,*p;
+				Node *h;
+				h = head;
+				next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+				for(;h->next!=NULL;)
+				{
+					if (sample > 0) {
+						real ran = (sqrt(vocab[h->next->word].cn / (sample * train_words)) + 1) * (sample * train_words) / vocab[h->next->word].cn;
+						next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+						if (ran < (next_random_s & 0xFFFF) / (real)65536) {
+								p = h->next;
+								h->next = h->next->next;
+								free(p);
+						}
+						else{
+							h = h->next;
+						}
 					}
 				}
-			}
-            h = head;
 			n = head->next;
-            //word = head->word;
-			//for (a = 1; a < window * 2 - b * 2 && n!=NULL && n->score > 0.6; a++,n=n->next) if (a != 0) {
-            for (a = 1; a < window * 2 - b * 2 && n!=NULL; a++,n=n->next) if (a != 0) {
+			
+			for (a = 1; a < window * 2 - b * 2 && n!=NULL && n->score > 0.6; a++,n=n->next) if (a != 0) {
 				c = a;
 				if(c < 0) continue;
 				if (c >= sentence_length) continue;
@@ -930,13 +870,13 @@ void *TrainModelThread(void *id) {
 						if (target == word) continue;
 						label = 0;
 					}
-                    randseed = randseed * 1103515245 + 12345;
-					randomjie = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(4 - 1 + 1) + 1;
-					for (c = 0;c < randomjie;c++){
+					/*负样本生成*/randseed = randseed * 1103515245 + 12345;
+					randomorder = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(4 - 1 + 1) + 1;
+					/**/for (c = 0;c < randomorder;c++){
 						while (1){
 							randseed = randseed * 1103515245 + 12345;
-							randomyicun[c] = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(5999 - 0 + 1) + 0;
-							if (weightcn[randomyicun[c]] == 0){
+							randomdep[c] = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(5999 - 0 + 1) + 0;
+							if (weightcn[randomdep[c]] == 0){
 								continue;
 							}else{
 								break;
@@ -946,17 +886,17 @@ void *TrainModelThread(void *id) {
 					l2 = target * (layer1_size);
 					f = 0;
 					for (c = 0; c < layer1_size; c++) f += syn0[c + l1] * syn1neg[c + l2];
-					for (c = 0;c < randomjie;c++){
-						for (z = layer1_size; z < layer1_size + weight_layer_size; z++) f += syn2[z - layer1_size + randomyicun[c] * weight_layer_size] * syn1neg[z + l2];
+					for (c = 0;c < randomorder;c++){
+						for (z = layer1_size; z < layer1_size + weight_layer_size; z++) f += syn2[z - layer1_size + randomdep[c] * weight_layer_size] * syn1neg[z + l2];
 					}
 					if (f > MAX_EXP) g = (label - 1) * alpha;
 					else if (f < -MAX_EXP) g = (label - 0) * alpha;
 					else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
 					for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] += g * syn1neg[c + l2];
 					for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn0[c + l1];
-					for (c = 0;c < randomjie;c++){
+					for (c = 0;c < randomorder;c++){
 						for (z = layer1_size; z < layer1_size + weight_layer_size; z++){
-							syn1neg[z + l2] += g * syn2[z - layer1_size + (randomyicun[c] * weight_layer_size)];
+							syn1neg[z + l2] += g * syn2[z - layer1_size + (randomdep[c] * weight_layer_size)];
 						}
 					}
 				}
@@ -1011,7 +951,6 @@ void TrainModel() {
 	printf("Starting training using file %s\n", train_file);
 	starting_alpha = alpha;
 	if (read_vocab_file[0] != 0) ReadVocab(); else LearnVocabFromTrainFile();
-    if (read_vocab_file[0] != 0) ReadWords();
 	if (save_vocab_file[0] != 0) SaveVocab();
 	if (read_weightcn[0] != 0) ReadWeightcn();
 	if (output_file[0] == 0) return;
@@ -1202,4 +1141,3 @@ int main(int argc, char **argv) {
 	TrainModel();
 	return 0;
 }
-
