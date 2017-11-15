@@ -23,12 +23,12 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
 ## Training Instructions
 * Experiment configurations are found in `demo-word.sh`
 * Choose an experiment that you would like to run (run as `./demo-word.sh`)
-  * For CBOW based on HS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 1 -size 300 -window 5 -negative -1 -hs 1 -sample 1e-4 -weight-sample 1e-10 -threads 500 -binary 0 -iter 10 -new_operation 1`
-  * For SG based on NS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 0 -size 300 -window 5 -negative 4 -hs 0 -sample 1e-4 -weight-sample 1e-10 -threads 500 -binary 0 -iter 10 -new_operation 1`
+  * For CBOW based on HS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 1 -size 300 -window 5 -negative -1 -hs 1 -sample 1e-4 -weight-sample 1e-10 -threads 100 -binary 0 -iter 10 -new_operation 1`
+  * For SG based on NS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 0 -size 300 -window 5 -negative 4 -hs 0 -sample 1e-4 -weight-sample 1e-10 -threads 200 -binary 0 -iter 10 -new_operation 1`
  
 ## Our Contributes
 > The only code file we changed is word2vec.c
   
 ## Other Tips
 * Each line in weightcn.txt is corresponding to each line in `depsl.txt` (Just in this corpus. You should get your own depsl.txt and weightcn.txt)
-* The number of threads in parameter `-threads` is according to the performance of your computer, we recommand 200~500.
+* The number of threads in parameter `-threads` is according to the performance of your computer, we recommand 100~200.
