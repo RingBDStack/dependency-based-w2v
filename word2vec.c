@@ -588,7 +588,7 @@ void *TrainModelThread(void *id) {
 	fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 	fseek(new_operation_fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 	randseed = (unsigned long long)time(NULL) * 10 + id;
-	randseed = randseed * 1103515245 + 12345;
+	randseed = randseed * 1103515245 + 12345; 
 	while (1) {
 		head = (sNode)malloc(sizeof(Node));
 		tail = head;
