@@ -26,7 +26,7 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
   * For CBOW based on HS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 1 -size 300 -window 5 -negative -1 -hs 1 -sample 1e-4 -weight-sample 1e-10 -threads 500 -binary 0 -iter 10 -new_operation 1`
   * For SG based on NS, run `time ./word2vec -train <trainfile> -output <outputfile> -new-output <extra-dimension-outputfile> -weight-output <weight(dependencites)-outputfile> -read-vocab vocab.txt -read-weightcn weightcn.txt -cbow 0 -size 300 -window 5 -negative 4 -hs 0 -sample 1e-4 -weight-sample 1e-10 -threads 500 -binary 0 -iter 10 -new_operation 1`
  
-## Our Contributes:
+## Our Contributes
 > The only code file we changed is word2vec.c
   
 ## Other Tips
