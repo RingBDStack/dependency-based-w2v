@@ -46,7 +46,7 @@ char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING], read_weightcn[MAX
 real weight[MAX_YICUN];               //all weights
 int weightcn[MAX_YICUN];              //frequency of weights
 real multi[10] = {1, 1.2, 1.4, 1.8, 2.5, 3.4, 5, 6, 7, 8};                       //preset value
-real premulti[10] = {1, 0.8, 0.6, 0.4, 0.3, 0.2, 0.1, 0.08, 0.06, 0.05};         //preset value
+real premulti[10] = {1, 0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05};         //preset value
 struct vocab_word *vocab;
 int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1, new_operation = 0;
 
@@ -827,9 +827,8 @@ void *TrainModelThread(void *id) {
 						}
 					}
 				}
-			n = head->next;
-			
-			for (a = 1; a < window * 2 - b * 2 && n!=NULL && n->score > 0.6; a++,n=n->next) if (a != 0) {
+			n = head;			
+			for (a = 1; a < window * 2 - b * 2 && n!=NULL; a++,n=n->next) if (a != 0) {
 				c = a;
 				if(c < 0) continue;
 				if (c >= sentence_length) continue;
@@ -856,7 +855,7 @@ void *TrainModelThread(void *id) {
 				// NEGATIVE SAMPLING
 				if (negative > 0) for (d = 0; d < negative + 1; d++) {
 					if (d == 0) {
-						target = last_word;
+						target = word;
 						label = 1;
 					}
 					else {
@@ -888,9 +887,7 @@ void *TrainModelThread(void *id) {
 								break;
 							}
 							else {
-								for (z = layer1_size; z < weight_layer_size + layer1_size; z++){
-									f += syn2[z - layer1_size + randomdep[c] * weight_layer_size] * syn1neg[z + l2];
-								}
+								for (z = layer1_size; z < weight_layer_size + layer1_size; z++) f += syn2[z - layer1_size + n->dep[c] * weight_layer_size] * syn1neg[z + l2];
 							}
 						}
 					}else{
@@ -909,16 +906,12 @@ void *TrainModelThread(void *id) {
 								break;
 							}
 							else {
-								for (z = layer1_size; z < weight_layer_size + layer1_size; z++){
-									syn1neg[z + l2] += g * syn2[z - layer1_size + (randomdep[c] * weight_layer_size)];
-								}
+								for (z = layer1_size; z < weight_layer_size + layer1_size; z++) syn1neg[z + l2] += g * syn2[z - layer1_size + (n->dep[c] * weight_layer_size)];
 							}
 						}
 					}else{
 						for (c = 0;c < randomorder;c++){
-							for (z = layer1_size; z < layer1_size + weight_layer_size; z++){
-								syn1neg[z + l2] += g * syn2[z - layer1_size + (randomdep[c] * weight_layer_size)];
-							}
+							for (z = layer1_size; z < layer1_size + weight_layer_size; z++) syn1neg[z + l2] += g * syn2[z - layer1_size + (randomdep[c] * weight_layer_size)];
 						}
 					}
 				}
