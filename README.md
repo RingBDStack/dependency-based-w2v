@@ -29,6 +29,6 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
 ## Our Contributes
 > The only code file we changed is word2vec.c
   
-## Other Tips
+## Other Tips 
 * Each line in weightcn.txt is corresponding to each line in `depsl.txt` (Just in this corpus. You should get your own depsl.txt and weightcn.txt)
 * The number of threads in parameter `-threads` is according to the performance of your computer, we recommand 100~500.
