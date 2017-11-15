@@ -570,7 +570,7 @@ void *TrainModelThread(void *id) {
 	long long learn_word_count = 0, last_learn_word_count = 0, word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
 	long long l1, l2, c, target, label, local_iter = iter;
 	int randomdep[5], randomorder = 0;
-	unsigned int randseed;
+	unsigned long long randseed;
 	unsigned long long next_random = (long long)id;
 	unsigned long long next_random_s = (long long)id;
 	real f, g;
@@ -587,7 +587,7 @@ void *TrainModelThread(void *id) {
 	FILE *new_operation_fi = fopen(train_file, "rb");
 	fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 	fseek(new_operation_fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
-	randseed = (unsigned int)time(NULL) * 10 + id;
+	randseed = (unsigned long long)time(NULL) * 10 + id;
 	randseed = randseed * 1103515245 + 12345;
 	while (1) {
 		head = (sNode)malloc(sizeof(Node));
