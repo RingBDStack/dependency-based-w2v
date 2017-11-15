@@ -31,4 +31,4 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
   
 ## Other Tips
 * Each line in weightcn.txt is corresponding to each line in `depsl.txt` (Just in this corpus. You should get your own depsl.txt and weightcn.txt)
-* The number of threads in parameter `-threads` is according to the performance of the computer which runs this algorithm, you must adjust it to your computer.
+* The number of threads in parameter `-threads` is according to the performance of your computer, we recommand 200~500.
