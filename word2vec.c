@@ -19,7 +19,7 @@
 #define MAX_SENTENCE_LENGTH 1000
 #define MAX_LINE 10000
 #define MAX_CODE_LENGTH 40
-#define MAX_YICUN 6000                 //amount of dependencies(weights)
+#define MAX_DEPS 6000                 //amount of dependencies(weights)
 #define PI (atan(1.0) * 4)
 
 const int vocab_hash_size = 30000000;  // Maximum 30 * 0.7 = 21M words in the vocabulary
@@ -43,8 +43,8 @@ typedef struct node
 
 char train_file[MAX_STRING], output_file[MAX_STRING], new_output_file[MAX_STRING], weight_output_file[MAX_STRING];
 char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING], read_weightcn[MAX_STRING];
-real weight[MAX_YICUN];               //all weights
-int weightcn[MAX_YICUN];              //frequency of weights
+real weight[MAX_DEPS];               //all weights
+int weightcn[MAX_DEPS];              //frequency of weights
 real multi[10] = {1, 1.2, 1.4, 1.8, 2.5, 3.4, 5, 6, 7, 8};                       //preset value
 real premulti[10] = {1, 0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05};         //preset value
 struct vocab_word *vocab;
@@ -637,35 +637,37 @@ void *TrainModelThread(void *id) {
 			fseek(new_operation_fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 			continue;
 		}
+        Node *n,*p,*q;
+		Node *h;
+		h = head;
+		next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+		for(;h->next!=NULL;)
+		{
+			if (sample > 0) {
+                real ran = (sqrt(vocab[h->next->word].cn / (sample * train_words)) + 1) * (sample * train_words) / vocab[h->next->word].cn;
+                if ( next_random_s >= 1000000000 ) next_random_s = (long long)id;
+                next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+                if (ran < (next_random_s & 0xFFFF) / (real)65536) {
+                    p = h->next;
+                    h->next = h->next->next;
+                    free(p);
+                }
+                else{
+                    h = h->next;
+                }
+			}
+		}
 		word = sen[0];
 		if (word == -1) continue;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1[c] = 0;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] = 0;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] = 0;
-		next_random_s = next_random_s* (unsigned long long)25214903917 + 11;
+        next_random_s = next_random * (unsigned long long)25214903917 + 11;
 		b = next_random_s % window + 1;
 		if (cbow) {
 			sum = 0;
 			count = 0;
 			if (new_operation == 1) {
-				Node *n,*p;
-				Node *h;
-				h = head;
-				for(;h->next!=NULL;)//negative sampling of dependencies
-				{
-					if (sample > 0) {
-						real ran = (sqrt(vocab[h->next->word].cn / (sample * train_words)) + 1) * (sample * train_words) / vocab[h->next->word].cn;
-						next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-						if (ran < (next_random_s & 0xFFFF) / (real)65536) {
-								p = h->next;
-								h->next = h->next->next;
-								free(p);
-						}
-						else{
-							h = h->next;
-						}
-					}
-				}
 				h = head;
 				n = head->next;
 				average = 0;
@@ -808,25 +810,6 @@ void *TrainModelThread(void *id) {
 		}
 		else {
 		if (new_operation == 1) {
-				Node *n,*p;
-				Node *h;
-				h = head;
-				next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-				for(;h->next!=NULL;)
-				{
-					if (sample > 0) {
-						real ran = (sqrt(vocab[h->next->word].cn / (sample * train_words)) + 1) * (sample * train_words) / vocab[h->next->word].cn;
-						next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-						if (ran < (next_random_s & 0xFFFF) / (real)65536) {
-								p = h->next;
-								h->next = h->next->next;
-								free(p);
-						}
-						else{
-							h = h->next;
-						}
-					}
-				}
 			n = head;			
 			for (a = 1; a < window * 2 - b * 2 && n!=NULL; a++,n=n->next) if (a != 0) {
 				c = a;
@@ -860,14 +843,16 @@ void *TrainModelThread(void *id) {
 					}
 					else {
 						next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-						target = table[(next_random_s >> 16) % table_size];
+						target = table[(next_random_s>> 16) % table_size];
 						if (target == 0) target = next_random_s % (vocab_size - 1) + 1;
 						if (target == word) continue;
 						label = 0;
+						//if ( randseed >= 10000000000 ) randseed = (unsigned long long)time(NULL) * 10 + id;
 						randseed = randseed * 1103515245 + 12345;
 						randomorder = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(4 - 1 + 1) + 1;//order of negative sample
 						for (c = 0;c < randomorder;c++){
 							while (1){
+								//if ( randseed >= 10000000000 ) randseed = (unsigned long long)time(NULL) * 10 + id;
 								randseed = randseed * 1103515245 + 12345;
 								randomdep[c] = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(5999 - 0 + 1) + 0;//dependencies of negative sample
 								if (weightcn[randomdep[c]] == 0){
@@ -925,7 +910,7 @@ void *TrainModelThread(void *id) {
 							for (z = layer1_size; z < weight_layer_size + layer1_size; z++){
 								if (weight_sample > 0) {
 								real ran = (sqrt(weightcn[n->dep[c]] / (weight_sample * train_weights)) + 1) * (weight_sample * train_weights) / weightcn[n->dep[c]];
-								next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+                                next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
 								if (ran < (next_random_s & 0xFFFF) / (real)65536){ 
 										continue;
 									}else{
@@ -938,8 +923,8 @@ void *TrainModelThread(void *id) {
 			}
 		}
 		}
-		Node *p = head;
-		Node *q = NULL;
+		p = head;
+		q = NULL;
 		for(;p!=NULL;)
 		{
 			q = p;
@@ -1037,7 +1022,7 @@ void TrainModel() {
 		free(cent);
 		free(cl);
 	}
-	for (a = 0;a < MAX_YICUN;a++){
+	for (a = 0;a < MAX_DEPS;a++){
 		fprintf(weight_fo, "%f\n", weight[a]);
 	}
 	fclose(fo);
@@ -1145,7 +1130,7 @@ int main(int argc, char **argv) {
 	expTable = (real *)malloc((EXP_TABLE_SIZE + 1) * sizeof(real));
 	if (new_operation == 1) {
 		printf("new_operation\n");
-		for (i = 0;i < MAX_YICUN;i++) {
+		for (i = 0;i < MAX_DEPS;i++) {
 			weight[i] = 0.8;
 		}
 	}
