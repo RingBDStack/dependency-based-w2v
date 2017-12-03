@@ -46,7 +46,7 @@ char save_vocab_file[MAX_STRING], read_vocab_file[MAX_STRING], read_weightcn[MAX
 real weight[MAX_DEPS];               //all weights
 int weightcn[MAX_DEPS];              //frequency of weights
 real multi[10] = {1, 1.2, 1.4, 1.8, 2.5, 3.4, 5, 6, 7, 8};                       //preset value
-real premulti[10] = {1, 0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05};         //preset value
+real premulti[10] = {1, 0.96, 0.94, 0.92, 0.9, 0.87, 0.83, 0.81, 0.7, 0.6};         //preset value
 struct vocab_word *vocab;
 int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1, new_operation = 0;
 
@@ -662,7 +662,7 @@ void *TrainModelThread(void *id) {
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1[c] = 0;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] = 0;
 		for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] = 0;
-        next_random_s = next_random * (unsigned long long)25214903917 + 11;
+        next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
 		b = next_random_s % window + 1;
 		if (cbow) {
 			sum = 0;
@@ -810,8 +810,8 @@ void *TrainModelThread(void *id) {
 		}
 		else {
 		if (new_operation == 1) {
-			n = head;			
-			for (a = 1; a < window * 2 - b * 2 && n!=NULL; a++,n=n->next) if (a != 0) {
+			n = head->next;			
+			for (a = 1; a < window * 2 - b * 2 && n!=NULL && n->score > 0.69; a++,n=n->next) if (a != 0) {
 				c = a;
 				if(c < 0) continue;
 				if (c >= sentence_length) continue;
@@ -819,6 +819,7 @@ void *TrainModelThread(void *id) {
 				if (last_word == -1) continue;
 				l1 = last_word * layer1_size;
 				for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] = 0;
+                for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] = 0;
 				// HIERARCHICAL SOFTMAX
 				if (hs) for (d = 0; d < vocab[word].codelen; d++) {
 					f = 0;
@@ -842,25 +843,30 @@ void *TrainModelThread(void *id) {
 						label = 1;
 					}
 					else {
-						next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
-						target = table[(next_random_s>> 16) % table_size];
-						if (target == 0) target = next_random_s % (vocab_size - 1) + 1;
+						next_random = next_random * (unsigned long long)25214903917 + 11;
+						target = table[(next_random>> 16) % table_size];
+						if (target == 0) target = next_random % (vocab_size - 1) + 1;
 						if (target == word) continue;
 						label = 0;
-						//if ( randseed >= 10000000000 ) randseed = (unsigned long long)time(NULL) * 10 + id;
 						randseed = randseed * 1103515245 + 12345;
-						randomorder = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(4 - 1 + 1) + 1;//order of negative sample
+						randomorder = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(5 - 1 + 1) + 1;//order of negative sample
 						for (c = 0;c < randomorder;c++){
 							while (1){
-								//if ( randseed >= 10000000000 ) randseed = (unsigned long long)time(NULL) * 10 + id;
 								randseed = randseed * 1103515245 + 12345;
 								randomdep[c] = ((randseed << 16) | ((randseed >> 16) & 0xFFFF))%(5999 - 0 + 1) + 0;//dependencies of negative sample
 								if (weightcn[randomdep[c]] == 0){
 									continue;
 								}else{
-									break;
+                                    real ran = (sqrt(weightcn[randomdep[c]] / (weight_sample * train_weights)) + 1) * (weight_sample * train_weights) / weightcn[randomdep[c]];
+                                    next_random_s = next_random_s * (unsigned long long)25214903917 + 11;
+                                    if (ran < (next_random_s & 0xFFFF) / (real)65536){ 
+                                        continue;
+                                    }else{
+                                        break;
+                                    }
 								}
 							}
+                            //printf("%d\n",weightcn[randomdep[c]]);
 						}
 					}
 					l2 = target * (layer1_size);
@@ -875,7 +881,8 @@ void *TrainModelThread(void *id) {
 								for (z = layer1_size; z < weight_layer_size + layer1_size; z++) f += syn2[z - layer1_size + n->dep[c] * weight_layer_size] * syn1neg[z + l2];
 							}
 						}
-					}else{
+					}
+                    else{
 						for (c = 0;c < randomorder;c++){
 							for (z = layer1_size; z < layer1_size + weight_layer_size; z++) f += syn2[z - layer1_size + randomdep[c] * weight_layer_size] * syn1neg[z + l2];
 						}
@@ -884,6 +891,8 @@ void *TrainModelThread(void *id) {
 					else if (f < -MAX_EXP) g = (label - 0) * alpha;
 					else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
 					for (c = 0; c < layer1_size + weight_layer_size; c++) neu1e[c] += g * syn1neg[c + l2];
+                    //for (c = 0; c < layer1_size; c++) neu1e[c] += g * syn1neg[c + l2];
+                    for (c = 0; c < layer1_size + weight_layer_size; c++) neu1w[c] += g * syn1neg[c + l2];
 					for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn0[c + l1];
 					if (d == 0){
 						for (c = 0;c < 10;c++) {
@@ -899,7 +908,7 @@ void *TrainModelThread(void *id) {
 							for (z = layer1_size; z < layer1_size + weight_layer_size; z++) syn1neg[z + l2] += g * syn2[z - layer1_size + (randomdep[c] * weight_layer_size)];
 						}
 					}
-				}
+                }
 				// Learn weights input -> hidden
 				for (c = 0; c < layer1_size; c++) syn0[c + l1] += neu1e[c];
 				for (c = 0;c < 10;c++) {
@@ -1131,7 +1140,7 @@ int main(int argc, char **argv) {
 	if (new_operation == 1) {
 		printf("new_operation\n");
 		for (i = 0;i < MAX_DEPS;i++) {
-			weight[i] = 0.8;
+			weight[i] = 0.9;
 		}
 	}
 	for (i = 0; i <= EXP_TABLE_SIZE; i++) {
