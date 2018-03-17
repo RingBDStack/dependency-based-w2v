@@ -37,7 +37,7 @@ typedef struct node
 	long long word;
 	real score;
 	long long dep[10];			   //all dependencies of this word
-	long long jie;                     //order of dependence
+	long long jie;                 //order of dependence
 	struct node *next;
 }Node, *sNode;
 
