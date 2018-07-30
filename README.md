@@ -20,6 +20,7 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
   * Get the result of words counting as `vocab.txt`
   * Get the result of dependencies counting as `weightcn.txt`
   * You should prepare data as `demo-depsl.txt`、`demo-vocab.txt`、`demo-weightcn.txt`
+* More specific steps are in the preprocess folder
   
 ## Training Instructions
 * Experiment configurations are found in `demo-word.sh`
