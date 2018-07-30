@@ -15,7 +15,7 @@ In order to do that, we've pre-stated all labeled grammatical relations in `deps
 All we need is to run `mdeps.java`. **Pay attention to set args[0] of the script as the preprocessed file in Step 2.**
 
 ### Step 4
-The reason why we count frequency of grammatical relations is for negative sampling during training.
+The reason why we count frequency of grammatical relations is for negative sampling during training.</br>
 Run `python count.py --file [file] --quantity [quantity]` to count the frequency of every relation and get the `weightcn.txt`.</br>
 **[file] means the preprocessed file in Step 3(such as `mdeps-demo.txt`), [quantity] means number of lines of `depsl.txt`(default is 5785)**
 
