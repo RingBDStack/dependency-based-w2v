@@ -2,7 +2,7 @@
 
 ### Step 1
 We should prepare a training corpus like http://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2</br>
-Then, running `python process_wiki.py` to filter data.
+Then, run `python process_wiki.py` to filter data.
 
 ### Step 2
 Using [Stanford Parser](https://nlp.stanford.edu/software/lex-parser.shtml) to analyze grammatical structure of sentences by running the `process.java` script. </br>
