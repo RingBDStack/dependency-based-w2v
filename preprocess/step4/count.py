@@ -34,6 +34,6 @@ items=dic.items()
 backitems=[[v[0],v[1]] for v in items]
 backitems.sort(reverse=False)
 for i in backitems:
-    output.write(str(i[0])+'\t'+str(i[1]))
+    output.write(str(i[1]))
     output.write('\n')
 output.close()
