@@ -17,7 +17,8 @@ with codecs.open(args.file, 'r', 'utf-8')as f:
        str1 = line.split(' ')
        i = 0
        for s in str1:
-           if (i==0) or ((i-1)%2==0):
+           if (i==0):
+           #if (i==0) or ((i-1)%2==0):
                if len(s)==0:
                    continue
                if s not in dic:
