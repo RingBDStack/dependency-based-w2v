@@ -31,6 +31,7 @@ with codecs.open(args.file, 'r', 'utf-8')as f:
 #backitems.sort(reverse=False)
 backitems= sorted(dic.items(), key=lambda d:d[1], reverse = True)
 for i in backitems:
-    output.write(str(i[0])+' '+str(i[1]))
+    #output.write(str(i[0])+' '+str(i[1]))
+    output.write(str(i[0]))
     output.write('\n')
 output.close()
