@@ -11,7 +11,7 @@ Using [Stanford Parser](https://nlp.stanford.edu/software/lex-parser.shtml) to a
 
 ### Step 3
 In this step, we'll transform the output of Step 2 into trainable format.</br>
-In order to do that, we've pre-stated all labeled grammatical relations in `depsl.txt`. These grammatical relations are normally fixed, you can add up them by yourself or just use the txt we provided. Then, transform these relations into their line number:</br>
+In order to do that, we've pre-stated some labeled grammatical relations in `depsl.txt`. These grammatical relations are normally fixed, we suggest you add up them by yourself rather than just use the txt we provided. Then, transform these relations into their line number:</br>
 All we need is to run `mdeps.java`. **Pay attention to set args[0] of the script as the preprocessed file in Step 2.**
 
 ### Step 4
