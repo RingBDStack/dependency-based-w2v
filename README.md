@@ -10,6 +10,7 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
 ### Requirements
 * Linux system
 * [English Wikipedia Database](https://link.zhihu.com/?target=http%3A//download.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2) : large-scale corpus
+* Although we use subsampling, the total number of dependencies is small, so it is necessary to build a balance corpus with a small difference in frequency in order to obtain high quality output.
 
 ### Setting up
 * Data preprocess
@@ -32,6 +33,8 @@ Some training data can be found here: http://mattmahoney.net/dc/enwik9.zip http:
   * -weight-output:weights of all dependencies
   * -read-weightcn:input-frenquency of all dependencies
   * -new_operation:means our modifies
+  * PS1: too large number of threads will lead to the low quality output or segment fault
+  * PS2: since only the first word in each line of our corpus is used as the target word, a larger -iter is needed
  
 ## Our Contributes 
   * Add dependencies in word embedding training
